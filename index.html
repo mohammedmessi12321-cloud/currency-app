@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>محول العملات العربية والعالمية</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:linear-gradient(135deg,#020617,#0f172a);
+  color:#fff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+.converter{
+  background:#1e293b;
+  padding:25px;
+  border-radius:12px;
+  width:400px;
+  text-align:center;
+  box-shadow:0 10px 25px rgba(0,0,0,.5);
+}
+input,select,button{
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  border:none;
+  border-radius:6px;
+  font-size:15px;
+}
+input,select{background:#020617;color:#fff}
+button{
+  background:#22c55e;
+  color:#fff;
+  font-weight:bold;
+  cursor:pointer;
+}
+button:hover{background:#16a34a}
+.swap{
+  background:#38bdf8;
+}
+.swap:hover{
+  background:#0ea5e9;
+}
+#result{margin-top:15px;font-size:16px;line-height:1.6}
+.flag{
+  font-size:18px;
+  margin-right:5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="converter">
+  <h2>🌍  محول العملات العربية والعالمية</h2>
+
+  <input type="number" id="amount" placeholder="أدخل المبلغ">
+
+  <select id="from"></select>
+
+  <button class="swap" onclick="swapCurrencies()">🔄 تبديل العملات</button>
+
+  <select id="to"></select>
+
+  <button onclick="convert()">💱 تحويل</button>
+
+  <p id="result"></p>
+</div>
+
+<script>
+const fromSelect = document.getElementById("from");
+const toSelect = document.getElementById("to");
+const result = document.getElementById("result");
+
+// للحصول على الاسم العربي للعملة
+const currencyDisplay = new Intl.DisplayNames(['ar'], { type: 'currency' });
+
+// أعلام بعض العملات (يمكن التوسيع)
+const flags = {
+  USD:"🇺🇸", EUR:"🇪🇺", MAD:"🇲🇦", SAR:"🇸🇦", AED:"🇦🇪",
+  EGP:"🇪🇬", GBP:"🇬🇧", JPY:"🇯🇵", CAD:"🇨🇦",
+  AUD:"🇦🇺", KWD:"🇰🇼", QAR:"🇶🇦", BHD:"🇧🇭"
+};
+
+// تحميل كل العملات
+async function loadCurrencies(){
+  const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
+  const data = await res.json();
+
+  Object.keys(data.rates).forEach(code=>{
+    const arName = currencyDisplay.of(code) || code;
+    const flag = flags[code] || "🌍";
+    const text = `${flag} ${arName} (${code})`;
+
+    fromSelect.add(new Option(text, code));
+    toSelect.add(new Option(text, code));
+  });
+
+  fromSelect.value = "USD";
+  toSelect.value = "MAD";
+}
+loadCurrencies();
+
+// تبديل العملات
+function swapCurrencies(){
+  const temp = fromSelect.value;
+  fromSelect.value = toSelect.value;
+  toSelect.value = temp;
+}
+
+// التحويل
+async function convert(){
+  const amount = document.getElementById("amount").value;
+  if(!amount || amount <= 0){
+    result.innerText = "❌ أدخل مبلغ صحيح";
+    return;
+  }
+
+  const from = fromSelect.value;
+  const to = toSelect.value;
+
+  const res = await fetch(`https://api.exchangerate-api.com/v4/latest/${from}`);
+  const data = await res.json();
+
+  const converted = (amount * data.rates[to]).toFixed(2);
+
+  const fromName = currencyDisplay.of(from) || from;
+  const toName = currencyDisplay.of(to) || to;
+
+  const fromFlag = flags[from] || "🌍";
+  const toFlag = flags[to] || "🌍";
+
+  result.innerText = 
+`✅ ${amount} ${fromName} ${fromFlag}
+= ${converted} ${toName} ${toFlag}`;
+}
+</script>
+
+</body>
+</html>
